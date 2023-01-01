@@ -24,7 +24,16 @@ import org.objectweb.asm.tree.ClassNode;
  * Severely Abhorrent and Ridiculously Convoluted ASM
  * 
  * <p>This simple system allows dynamic generation and injection of proxy classes.
- * 
+ * This can be very helpful when two or more projects try to replace the same instance
+ * of a class and end up overwriting each other.
+ *
+ * <p>SarcASM gathers all methods requested by transformers, pastes them as-is into
+ * the generated proxy classes, passes the generated ClassNode to transformers,
+ * defines the now transformed proxy class as an anonymous class of the target, giving
+ * direct access to private members, then invokes injectors for the target class
+ * and creates a full copy of the instance an injector is capable of replacing,
+ * allowing for seamless injection of the proxy class.
+ *
  * @author mine_diver
  */
 public final class SarcASM {
@@ -52,10 +61,21 @@ public final class SarcASM {
 		});
 		LOGGER.addHandler(handler);
 	}
+	private static final int MODIFIER_OFFSET = 152;
+	private static final int ACCESS_FLAG_OFFSET = 156;
 	private static final Map<Class<?>, Set<ProxyInjector<?>>> INJECTORS = new IdentityHashMap<>();
 	private static final Map<Class<?>, Set<ProxyTransformer>> TRANSFORMERS = new IdentityHashMap<>();
 
-	
+
+	/**
+	 * Registers an injector for the given class and initializes proxy if transformers already exist.
+	 *
+	 * <p>Injectors for the same instance do not conflict unless coded poorly.
+	 *
+	 * @param targetClass the target class
+	 * @param injector the injector instance
+	 * @param <T> the target class type
+	 */
 	public static <T> void registerInjector(Class<T> targetClass, ProxyInjector<T> injector) {
 		if (!INJECTORS.computeIfAbsent(Objects.requireNonNull(targetClass), value -> Util.newIdentitySet()).add(Objects.requireNonNull(injector)))
 			LOGGER.warning("Tried registering the same \"" + targetClass.getName() + "\" injector at \"" + injector.getClass().getName() + "\" twice. Please check your code");
@@ -63,14 +83,33 @@ public final class SarcASM {
 			initProxyFor(targetClass);
 			
 	}
-	
+
+	/**
+	 * Registers a transformer for the given class and initializes proxy if injectors already exist.
+	 *
+	 * <p>Transformers of the same method do not conflict unless coded poorly.
+	 *
+	 * @param targetClass the target class
+	 * @param transformer the transformer instance
+	 * @param <T> the target class type
+	 */
 	public static <T> void registerTransformer(Class<T> targetClass, ProxyTransformer transformer) {
 		if (!TRANSFORMERS.computeIfAbsent(Objects.requireNonNull(targetClass), value -> Util.newIdentitySet()).add(Objects.requireNonNull(transformer)))
 			LOGGER.warning("Tried registering the same \"" + targetClass.getName() + "\" transformer at \"" + transformer.getClass().getName() + "\" twice. Please check your code");
 		if (INJECTORS.containsKey(targetClass))
 			initProxyFor(targetClass);
 	}
-	
+
+	/**
+	 * Generates, transforms, defines, and injects the proxy class for the given target class.
+	 *
+	 * <p>Since a proxy is already initialized once both injectors and transformers are registered,
+	 * this should only be called if the proxy instance got invalidated by some 3rd-party code.
+	 *
+	 * @param targetClass the target class
+	 * @param <T> the target class type
+	 * @param <P> the proxy class type
+	 */
 	@SuppressWarnings("unchecked")
 	public static <T, P extends T> void initProxyFor(Class<T> targetClass) {
 		
@@ -107,6 +146,18 @@ public final class SarcASM {
 		
 		// transforming
 		transformers.forEach(transformer -> transformer.transform(proxyNode));
+
+		// making sure the target class is inheritable
+		// (proxies can't override methods in final classes though)
+		T dummyInstance;
+		try {
+			dummyInstance = (T) Util.UNSAFE.allocateInstance(targetClass);
+		} catch (InstantiationException e) {
+			throw new RuntimeException(e);
+		}
+		long klassPointer = Util.UNSAFE.arrayIndexScale(Object[].class) == 4 ? (Util.UNSAFE.getInt(dummyInstance, 8L) & 0xFFFFFFFFL) << 3 : Util.UNSAFE.getLong(dummyInstance, 8L);
+		Util.UNSAFE.putInt(klassPointer + MODIFIER_OFFSET, Util.UNSAFE.getInt(klassPointer + MODIFIER_OFFSET) & ~Modifier.FINAL);
+		Util.UNSAFE.putInt(klassPointer + ACCESS_FLAG_OFFSET, Util.UNSAFE.getInt(klassPointer + ACCESS_FLAG_OFFSET) & ~Modifier.FINAL);
 		
 		// defining
 		ClassWriter proxyWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);

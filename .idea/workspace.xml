@@ -4,13 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6a92745e-f15b-4084-bc2a-590d315f6586" name="Changes" comment="Remove references to OverrideAPI">
-      <change afterPath="$PROJECT_DIR$/src/test/java/net/mine_diver/sarcasm/test/Main.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/net/mine_diver/sarcasm/test/Target.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/net/mine_diver/sarcasm/test/TargetInjector.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/net/mine_diver/sarcasm/test/TargetTransformer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="6a92745e-f15b-4084-bc2a-590d315f6586" name="Changes" comment="Added test">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/SarcASM.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/SarcASM.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/injector/ProxyInjector.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/injector/ProxyInjector.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/transformer/ProxyTransformer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/transformer/ProxyTransformer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/net/mine_diver/sarcasm/test/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/net/mine_diver/sarcasm/test/Main.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,7 +80,14 @@
       <option name="project" value="LOCAL" />
       <updated>1672574535043</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Added test">
+      <created>1672575618770</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1672575618770</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -97,6 +103,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Remove references to OverrideAPI" />
-    <option name="LAST_COMMIT_MESSAGE" value="Remove references to OverrideAPI" />
+    <MESSAGE value="Added test" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added test" />
   </component>
 </project>
