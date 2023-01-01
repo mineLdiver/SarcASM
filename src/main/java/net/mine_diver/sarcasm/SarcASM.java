@@ -127,14 +127,14 @@ public final class SarcASM {
 		Set<String> requestedMethods = transformers.stream().flatMap(transformer -> Arrays.stream(transformer.getRequestedMethods())).collect(Collectors.toSet());
 		ClassReader targetReader = new ClassReader(ASMHelper.readClassBytes(targetClass));
 		ClassNode targetNode = new ClassNode();
-		targetReader.accept(targetNode, 0);
+		targetReader.accept(targetNode, ClassReader.EXPAND_FRAMES);
 		
 		// proxy class generation
 		ClassWriter proxyGenerator = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 		proxyGenerator.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, Type.getInternalName(targetClass), null, Type.getInternalName(targetClass), null);
 		proxyGenerator.visitEnd();
 		ClassNode proxyNode = new ClassNode();
-		new ClassReader(proxyGenerator.toByteArray()).accept(proxyNode, 0);
+		new ClassReader(proxyGenerator.toByteArray()).accept(proxyNode, ClassReader.EXPAND_FRAMES);
 		
 		// initializing requested methods
 		targetNode.methods.forEach(targetMethod -> {
