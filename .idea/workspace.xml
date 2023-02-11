@@ -4,10 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6a92745e-f15b-4084-bc2a-590d315f6586" name="Changes" comment="Expand frames">
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+    <list default="true" id="6a92745e-f15b-4084-bc2a-590d315f6586" name="Changes" comment="Some utility methods">
+      <change afterPath="$PROJECT_DIR$/src/test/java/net/mine_diver/sarcasm/test/TargetSuper.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/util/ASMHelper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/util/ASMHelper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/SarcASM.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/mine_diver/sarcasm/SarcASM.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/net/mine_diver/sarcasm/test/Target.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/net/mine_diver/sarcasm/test/Target.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -183,7 +184,14 @@
       <option name="project" value="LOCAL" />
       <updated>1672598195935</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Some utility methods">
+      <created>1673656646862</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1673656646862</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -202,6 +210,7 @@
     <MESSAGE value="Added test" />
     <MESSAGE value="Some docs" />
     <MESSAGE value="Expand frames" />
-    <option name="LAST_COMMIT_MESSAGE" value="Expand frames" />
+    <MESSAGE value="Some utility methods" />
+    <option name="LAST_COMMIT_MESSAGE" value="Some utility methods" />
   </component>
 </project>

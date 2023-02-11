@@ -1,13 +1,13 @@
 package net.mine_diver.sarcasm.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Objects;
-
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Objects;
 
 public final class ASMHelper {
 	private ASMHelper() {}

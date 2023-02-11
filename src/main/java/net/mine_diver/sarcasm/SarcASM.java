@@ -1,14 +1,5 @@
 package net.mine_diver.sarcasm;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.*;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-import java.util.stream.Collectors;
-
 import net.mine_diver.sarcasm.injector.ProxyInjector;
 import net.mine_diver.sarcasm.transformer.ProxyTransformer;
 import net.mine_diver.sarcasm.util.ASMHelper;
@@ -19,6 +10,15 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.*;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.stream.Collectors;
 
 /**
  * Severely Abhorrent and Ridiculously Convoluted ASM
@@ -172,14 +172,18 @@ public final class SarcASM {
 			} catch (InstantiationException e) {
 				throw new RuntimeException(e);
 			}
-			for (Field field : targetClass.getDeclaredFields())
-				if (!Modifier.isStatic(field.getModifiers())) {
-					try {
-						Reflection.publicField(field).set(proxyInstance, Reflection.publicField(field).get(targetInstance));
-					} catch (IllegalArgumentException | IllegalAccessException e) {
-						throw new RuntimeException(e);
+			Class<?> currentClass = targetClass;
+			while (currentClass != null) {
+				for (Field field : currentClass.getDeclaredFields())
+					if (!Modifier.isStatic(field.getModifiers())) {
+						try {
+							Reflection.publicField(field).set(proxyInstance, Reflection.publicField(field).get(targetInstance));
+						} catch (IllegalArgumentException | IllegalAccessException e) {
+							throw new RuntimeException(e);
+						}
 					}
-				}
+				currentClass = currentClass.getSuperclass();
+			}
 			targetInjectors.forEach(targetInjector -> targetInjector.inject(proxyInstance));
 		});
 	}
