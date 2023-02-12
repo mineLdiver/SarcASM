@@ -255,7 +255,7 @@ public final class SarcASM {
 		Class<P> proxyClass = (Class<P>) Util.UNSAFE.defineAnonymousClass(targetClass, proxyBytes, null).asSubclass(targetClass);
 
 		// injecting
-		injectors.stream().collect(Collectors.groupingBy(ProxyInjector::getTargetInstance, IdentityHashMap::new, Collectors.toCollection(Util::newIdentitySet))).forEach((targetInstance, targetInjectors) -> {
+		injectors.stream().filter(tProxyInjector -> tProxyInjector.getTargetInstance() != null).collect(Collectors.groupingBy(ProxyInjector::getTargetInstance, IdentityHashMap::new, Collectors.toCollection(Util::newIdentitySet))).forEach((targetInstance, targetInjectors) -> {
 			P proxyInstance;
 			try {
 				proxyInstance = (P) Util.UNSAFE.allocateInstance(proxyClass);
