@@ -6,8 +6,9 @@ public class Target extends TargetSuper {
 
     private Target() {}
 
+    @Override
     public void test() {
         System.out.println("Hello world!");
-        System.out.println("Super field is " + test);
+        super.test();
     }
 }

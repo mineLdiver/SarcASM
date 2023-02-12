@@ -7,10 +7,16 @@ import net.mine_diver.sarcasm.util.Reflection;
 import net.mine_diver.sarcasm.util.Util;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.*;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -19,6 +25,9 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * Severely Abhorrent and Ridiculously Convoluted ASM
@@ -61,6 +70,7 @@ public final class SarcASM {
 		});
 		LOGGER.addHandler(handler);
 	}
+	private static final boolean DEBUG_EXPORT = Boolean.getBoolean("sarcasm.debug.export");
 	private static final int MODIFIER_OFFSET = 152;
 	private static final int ACCESS_FLAG_OFFSET = 156;
 	private static final Map<Class<?>, Set<ProxyInjector<?>>> INJECTORS = new IdentityHashMap<>();
@@ -130,22 +140,84 @@ public final class SarcASM {
 		targetReader.accept(targetNode, ClassReader.EXPAND_FRAMES);
 		
 		// proxy class generation
-		ClassWriter proxyGenerator = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-		proxyGenerator.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, Type.getInternalName(targetClass), null, Type.getInternalName(targetClass), null);
-		proxyGenerator.visitEnd();
 		ClassNode proxyNode = new ClassNode();
-		new ClassReader(proxyGenerator.toByteArray()).accept(proxyNode, ClassReader.EXPAND_FRAMES);
-		
+		proxyNode.visit(V1_8, ACC_PUBLIC, Type.getInternalName(targetClass), null, Type.getInternalName(targetClass), null);
+		proxyNode.visitEnd();
+
 		// initializing requested methods
-		targetNode.methods.forEach(targetMethod -> {
-			if (requestedMethods.remove(ASMHelper.toTarget(targetMethod)))
-				proxyNode.methods.add(targetMethod);
+		targetNode.methods.stream().filter(targetMethod -> requestedMethods.remove(ASMHelper.toTarget(targetMethod))).forEach(methodNode -> {
+			MethodNode proxyMethod = new MethodNode();
+			methodNode.accept(proxyMethod);
+			methodNode.localVariables.get(0).desc = Type.getObjectType(proxyNode.name).getDescriptor();
+			proxyNode.methods.add(methodNode);
 		});
 		if (!requestedMethods.isEmpty())
 			throw new IllegalArgumentException("Couldn't find some requested methods for class \"" + targetClass.getName() + "\", such as: " + requestedMethods);
-		
+
 		// transforming
 		transformers.forEach(transformer -> transformer.transform(proxyNode));
+
+		// super.super implementation
+		Map<String, FieldNode> methodHandles = new HashMap<>();
+		new ArrayList<>(proxyNode.methods).forEach(methodNode -> {
+			StreamSupport.stream(methodNode.instructions.spliterator(), false).filter(abstractInsnNode -> abstractInsnNode.getType() == AbstractInsnNode.METHOD_INSN).map(abstractInsnNode -> ((MethodInsnNode) abstractInsnNode)).filter(methodInsnNode -> methodInsnNode.owner.equals(targetNode.superName) && targetNode.methods.stream().anyMatch(methodNode1 -> methodInsnNode.name.equals(methodNode1.name) && methodInsnNode.desc.equals(methodNode1.desc))).forEach(methodInsnNode -> {
+				String target = ASMHelper.toTarget(methodInsnNode);
+				if (!methodHandles.containsKey(target)) {
+					FieldNode methodHandle = new FieldNode(ACC_PRIVATE | ACC_STATIC | ACC_FINAL, "SARCASM$super_" + methodInsnNode.name, Type.getDescriptor(MethodHandle.class), null, null);
+					methodHandles.put(target, methodHandle);
+					proxyNode.fields.add(methodHandle);
+					InsnList mhInit = new InsnList();
+					mhInit.add(new FieldInsnNode(GETSTATIC, Type.getInternalName(Util.class), "IMPL_LOOKUP", Type.getDescriptor(MethodHandles.Lookup.class)));
+					mhInit.add(new LdcInsnNode(Type.getObjectType(targetNode.superName)));
+					mhInit.add(new LdcInsnNode(methodInsnNode.name));
+					mhInit.add(new LdcInsnNode(Type.getMethodType(methodInsnNode.desc)));
+					mhInit.add(new LdcInsnNode(Type.getObjectType(targetNode.superName)));
+					mhInit.add(new MethodInsnNode(INVOKEVIRTUAL, Type.getInternalName(MethodHandles.Lookup.class), "findSpecial", Type.getMethodDescriptor(Type.getType(MethodHandle.class), Type.getType(Class.class), Type.getType(String.class), Type.getType(MethodType.class), Type.getType(Class.class))));
+					mhInit.add(new FieldInsnNode(PUTSTATIC, proxyNode.name, methodHandle.name, methodHandle.desc));
+					InsnList clinitInsns = proxyNode.methods.stream().filter(methodNode1 -> methodNode1.name.equals("<clinit>")).findFirst().orElseGet(() -> {
+						MethodNode clinit = new MethodNode(ACC_STATIC, "<clinit>", "()V", null, null);
+						clinit.instructions.add(new InsnNode(RETURN));
+						proxyNode.methods.add(clinit);
+						return clinit;
+					}).instructions;
+					clinitInsns.insertBefore(clinitInsns.getLast(), mhInit);
+				}
+				FieldNode methodHandle = methodHandles.get(target);
+				InsnList superCall = new InsnList();
+				LabelNode startTry = new LabelNode();
+				superCall.add(startTry);
+				Type[] argumentTypes = Util.concat(Type.getObjectType(proxyNode.name), Type.getArgumentTypes(methodInsnNode.desc));
+				int curArg = methodNode.maxLocals;
+				for (Type argumentType : argumentTypes)
+					ASMHelper.addLocalVariable(methodNode, argumentType.getDescriptor());
+				for (int i = argumentTypes.length - 1; i >= 0; i--)
+					superCall.add(new VarInsnNode(argumentTypes[i].getOpcode(ISTORE), methodNode.maxLocals - argumentTypes.length + i));
+				superCall.add(new FieldInsnNode(GETSTATIC, proxyNode.name, methodHandle.name, methodHandle.desc));
+				for (Type argumentType : argumentTypes)
+					superCall.add(new VarInsnNode(argumentType.getOpcode(ILOAD), curArg++));
+				superCall.add(new MethodInsnNode(INVOKEVIRTUAL, Type.getInternalName(MethodHandle.class), "invoke", Type.getMethodDescriptor(Type.getReturnType(methodInsnNode.desc), argumentTypes)));
+				LabelNode endTry = new LabelNode();
+				superCall.add(endTry);
+				LabelNode exitTry = new LabelNode();
+				superCall.add(new JumpInsnNode(GOTO, exitTry));
+				LabelNode handleTry = new LabelNode();
+				superCall.add(handleTry);
+				LocalVariableNode throwable = ASMHelper.addLocalVariable(methodNode, ASMHelper.allocateLocal(methodNode), "e", Type.getDescriptor(Throwable.class), handleTry, exitTry);
+				superCall.add(new VarInsnNode(ASTORE, throwable.index));
+				superCall.add(new TypeInsnNode(NEW, Type.getInternalName(RuntimeException.class)));
+				superCall.add(new InsnNode(DUP));
+				superCall.add(new VarInsnNode(ALOAD, throwable.index));
+				superCall.add(new MethodInsnNode(INVOKESPECIAL, Type.getInternalName(RuntimeException.class), "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(Throwable.class))));
+				superCall.add(new InsnNode(ATHROW));
+				superCall.add(exitTry);
+				methodNode.instructions.insertBefore(methodInsnNode, superCall);
+				methodNode.instructions.remove(methodInsnNode);
+				methodNode.tryCatchBlocks.add(new TryCatchBlockNode(startTry, endTry, handleTry, Type.getInternalName(Throwable.class)));
+			});
+			methodNode.localVariables.get(0).start = ASMHelper.getStartLabel(methodNode);
+		});
+		if (!methodHandles.isEmpty())
+			proxyNode.innerClasses.add(new InnerClassNode("java/lang/invoke/MethodHandles$Lookup", "java/lang/invoke/MethodHandles", "Lookup", ACC_PUBLIC | ACC_STATIC | ACC_FINAL));
 
 		// making sure the target class is inheritable
 		// (proxies can't override methods in final classes though)
@@ -162,8 +234,26 @@ public final class SarcASM {
 		// defining
 		ClassWriter proxyWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 		proxyNode.accept(proxyWriter);
-		Class<P> proxyClass = (Class<P>) Util.UNSAFE.defineAnonymousClass(targetClass, proxyWriter.toByteArray(), null);
-		
+		byte[] proxyBytes = proxyWriter.toByteArray();
+		if (DEBUG_EXPORT) {
+			File exportLoc = new File(".sarcasm.out/class/" + proxyNode.name + ".class");
+			//noinspection ResultOfMethodCallIgnored
+			exportLoc.getParentFile().mkdirs();
+			FileOutputStream file;
+			try {
+				file = new FileOutputStream(exportLoc);
+			} catch (FileNotFoundException e) {
+				throw new RuntimeException(e);
+			}
+			try {
+				file.write(proxyBytes);
+				file.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		Class<P> proxyClass = (Class<P>) Util.UNSAFE.defineAnonymousClass(targetClass, proxyBytes, null).asSubclass(targetClass);
+
 		// injecting
 		injectors.stream().collect(Collectors.groupingBy(ProxyInjector::getTargetInstance, IdentityHashMap::new, Collectors.toCollection(Util::newIdentitySet))).forEach((targetInstance, targetInjectors) -> {
 			P proxyInstance;
