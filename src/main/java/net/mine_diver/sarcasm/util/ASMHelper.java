@@ -34,11 +34,23 @@ public final class ASMHelper {
     }
 
     public static String toTarget(ClassNode classNode, MethodNode methodNode) {
-        return "L" + classNode.name + ";" + methodNode.name + methodNode.desc;
+        return Type.getObjectType(classNode.name).getDescriptor() + methodNode.name + methodNode.desc;
     }
 
     public static String toTarget(MethodInsnNode methodInsn) {
-        return "L" + methodInsn.owner + ";" + methodInsn.name + methodInsn.desc;
+        return Type.getObjectType(methodInsn.owner).getDescriptor() + methodInsn.name + methodInsn.desc;
+    }
+
+    public static String toTarget(Class<?> owner, FieldNode fieldNode) {
+        return Type.getDescriptor(owner) + fieldNode.name + ":" + fieldNode.desc;
+    }
+
+    public static String toTarget(ClassNode classNode, FieldNode fieldNode) {
+        return Type.getObjectType(classNode.name).getDescriptor() + fieldNode.name + ":" + fieldNode.desc;
+    }
+
+    public static String toTarget(FieldInsnNode fieldInsn) {
+        return Type.getObjectType(fieldInsn.owner).getDescriptor() + fieldInsn.name + ":" + fieldInsn.desc;
     }
 
     public static LocalVariableNode addLocalVariable(MethodNode method, String desc) {
