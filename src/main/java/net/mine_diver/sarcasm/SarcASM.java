@@ -91,7 +91,6 @@ public final class SarcASM {
 			LOGGER.warning("Tried registering the same \"" + targetClass.getName() + "\" injector at \"" + injector.getClass().getName() + "\" twice. Please check your code");
 		if (TRANSFORMERS.containsKey(targetClass))
 			initProxyFor(targetClass);
-			
 	}
 
 	/**
@@ -125,8 +124,10 @@ public final class SarcASM {
 		
 		// sanity checks
 		Set<ProxyInjector<T>> injectors = (Set<ProxyInjector<T>>) (Set<?>) INJECTORS.get(targetClass);
-		if (injectors == null)
-			throw new IllegalArgumentException("There are no registered injectors for class \"" + targetClass.getName() + "\"! Terminating");
+		if (injectors == null) {
+			LOGGER.info("\"" + targetClass.getName() + "\" has no injectors. Skipping");
+			return;
+		}
 		Set<ProxyTransformer> transformers = TRANSFORMERS.get(targetClass);
 		if (transformers == null) {
 			LOGGER.info("\"" + targetClass.getName() + "\" has no transformers. Skipping");
