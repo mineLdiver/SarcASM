@@ -4,7 +4,7 @@ public class Target extends TargetSuper {
 
     public static final Target INSTANCE = new Target();
 
-    private Target() {}
+    public Target() {}
 
     @Override
     public void test() {

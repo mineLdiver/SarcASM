@@ -11,5 +11,9 @@ public class Main {
         SarcASM.registerTransformer(Target.class, new TargetTransformer());
         System.out.println(Target.INSTANCE.getClass().getName());
         Target.INSTANCE.test();
+        Target untracked = SarcASM.newUntrackedProxy(Target::new);
+        System.out.println(untracked.getClass().getName());
+        System.out.println(untracked == Target.INSTANCE);
+        untracked.test();
     }
 }
