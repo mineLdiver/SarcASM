@@ -112,7 +112,7 @@ public final class SarcASM {
 		SuperSuperTransformer<T> ss = SuperSuperTransformer.of(targetClass);
 		IndirectlyLinkedIdentitySet<ProxyTransformer> transformers = TRANSFORMERS.computeIfAbsent(Objects.requireNonNull(targetClass), SarcASM::initDefaultTransformers);
 		transformers.entry(Objects.requireNonNull(transformer)).after(rm).before(pw, ss).add();
-		PROXY_CLASSES.remove(targetClass);
+		invalidateProxyClass(targetClass);
 		if (INJECTORS.containsKey(targetClass))
 			initProxyFor(targetClass);
 	}
@@ -178,6 +178,10 @@ public final class SarcASM {
 	 */
 	public static <T> Optional<Stream<ProxyTransformer>> streamTransformers(final Class<T> targetClass) {
 		return TRANSFORMERS.containsKey(targetClass) ? Optional.of(TRANSFORMERS.get(targetClass).stream()) : Optional.empty();
+	}
+
+	public static <T> void invalidateProxyClass(Class<T> targetClass) {
+		PROXY_CLASSES.remove(targetClass);
 	}
 
 	private static <T> IndirectlyLinkedIdentitySet<ProxyTransformer> initDefaultTransformers(Class<T> targetClass) {
