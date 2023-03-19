@@ -38,11 +38,11 @@ public final class RequestedMethodsTransformer<T> implements ProxyTransformer {
         final Set<String> requestedMethods = SarcASM.streamTransformers(targetClass).map(stream -> stream.flatMap(transformer -> Arrays.stream(transformer.getRequestedMethods())).collect(Collectors.toSet())).orElseGet(Collections::emptySet);
         if (requestedMethods.isEmpty()) return;
         targetNode.methods.stream().filter(targetMethod -> requestedMethods.remove(ASMHelper.toTarget(targetMethod))).forEach(methodNode -> {
-            final MethodNode proxyMethod = new MethodNode();
+            final MethodNode proxyMethod = new MethodNode(methodNode.access, methodNode.name, methodNode.desc, methodNode.signature, methodNode.exceptions.toArray(new String[0]));
             methodNode.accept(proxyMethod);
-            if (methodNode.localVariables.size() > 0)
-                methodNode.localVariables.get(0).desc = Type.getObjectType(node.name).getDescriptor();
-            node.methods.add(methodNode);
+            if (proxyMethod.localVariables.size() > 0)
+                proxyMethod.localVariables.get(0).desc = Type.getObjectType(node.name).getDescriptor();
+            node.methods.add(proxyMethod);
         });
         if (!requestedMethods.isEmpty())
             throw new IllegalArgumentException("Couldn't find some requested methods for class \"" + targetClass.getName() + "\", such as: " + requestedMethods);

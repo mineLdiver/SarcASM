@@ -93,8 +93,7 @@ public final class SarcASM {
 	public static <T> void registerInjector(final Class<T> targetClass, final ProxyInjector<T> injector) {
 		if (!INJECTORS.computeIfAbsent(Objects.requireNonNull(targetClass), value -> Util.newIdentitySet()).add(Objects.requireNonNull(injector)))
 			LOGGER.warning("Tried registering the same \"" + targetClass.getName() + "\" injector at \"" + injector.getClass().getName() + "\" twice. Please check your code");
-		if (TRANSFORMERS.containsKey(targetClass))
-			initProxyFor(targetClass);
+		initProxyFor(targetClass);
 	}
 
 	/**
@@ -190,7 +189,7 @@ public final class SarcASM {
 		SuperSuperTransformer<T> ss = SuperSuperTransformer.of(targetClass);
 		IndirectlyLinkedIdentitySet<ProxyTransformer> set = new IndirectlyLinkedIdentitySet<>();
 		set.entry(rm).before(pw, ss).add();
-		set.entry(pw).after(rm).before(pw).add();
+		set.entry(pw).after(rm).before(ss).add();
 		set.entry(ss).after(rm, pw).add();
 		return set;
 	}
@@ -224,6 +223,7 @@ public final class SarcASM {
 	private static <T, P extends T> Class<P> generateProxyClass(final Class<T> targetClass) {
 		// sanity checks
 		if (targetClass.getClassLoader() == null) return null;
+		if (PROXY_CLASSES.containsValue(targetClass)) throw new IllegalStateException("Tried to proxy a proxy! " + targetClass.getName());
 
 		// preparations
 		final IndirectlyLinkedIdentitySet<ProxyTransformer> transformers = TRANSFORMERS.computeIfAbsent(targetClass, SarcASM::initDefaultTransformers);

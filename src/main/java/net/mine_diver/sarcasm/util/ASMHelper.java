@@ -15,7 +15,7 @@ public final class ASMHelper {
 	
 	public static byte[] readClassBytes(Class<?> classObject) {
         byte[] bytes;
-        try (InputStream classStream = Objects.requireNonNull(ASMHelper.class.getClassLoader().getResourceAsStream(classObject.getName().replace('.', '/').concat(".class")))) {
+        try (InputStream classStream = Objects.requireNonNull(classObject.getClassLoader().getResourceAsStream(classObject.getName().replace('.', '/').concat(".class")))) {
             bytes = new byte[classStream.available()];
             if (classStream.read(bytes) == -1)
                 throw new RuntimeException("Couldn't read class \"" + classObject.getName() + "\"!");
