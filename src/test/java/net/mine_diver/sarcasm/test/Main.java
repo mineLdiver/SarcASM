@@ -15,5 +15,7 @@ public class Main {
         System.out.println(untracked.getClass().getName());
         System.out.println(untracked == Target.INSTANCE);
         untracked.test();
+        SarcASM.registerTransformer(TargetTwo.class, new TargetTwoTransformer());
+        untracked.testTwo();
     }
 }

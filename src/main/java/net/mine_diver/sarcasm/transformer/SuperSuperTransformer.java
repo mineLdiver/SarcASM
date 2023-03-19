@@ -96,7 +96,8 @@ public final class SuperSuperTransformer<T> implements ProxyTransformer {
                 methodNode.instructions.remove(methodInsnNode);
                 methodNode.tryCatchBlocks.add(new TryCatchBlockNode(startTry, endTry, handleTry, Type.getInternalName(Throwable.class)));
             });
-            methodNode.localVariables.get(0).start = ASMHelper.getStartLabel(methodNode);
+            if (methodNode.localVariables.size() > 0)
+                methodNode.localVariables.get(0).start = ASMHelper.getStartLabel(methodNode);
         });
         if (!methodHandles.isEmpty())
             node.innerClasses.add(new InnerClassNode("java/lang/invoke/MethodHandles$Lookup", "java/lang/invoke/MethodHandles", "Lookup", ACC_PUBLIC | ACC_STATIC | ACC_FINAL));

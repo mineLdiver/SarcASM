@@ -2,12 +2,13 @@ package net.mine_diver.sarcasm;
 
 import net.mine_diver.sarcasm.injector.ProxyInjector;
 import net.mine_diver.sarcasm.transformer.ProxyTransformer;
+import net.mine_diver.sarcasm.transformer.ProxyWrapperTransformer;
 import net.mine_diver.sarcasm.transformer.RequestedMethodsTransformer;
 import net.mine_diver.sarcasm.transformer.SuperSuperTransformer;
 import net.mine_diver.sarcasm.util.ASMHelper;
 import net.mine_diver.sarcasm.util.Reflection;
 import net.mine_diver.sarcasm.util.Util;
-import net.mine_diver.sarcasm.util.collection.ConditionalSet;
+import net.mine_diver.sarcasm.util.collection.IndirectlyLinkedIdentitySet;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
@@ -77,7 +78,7 @@ public final class SarcASM {
 	private static final int ACCESS_FLAG_OFFSET = 156;
 	private static final Map<Class<?>, Class<?>> PROXY_CLASSES = new IdentityHashMap<>();
 	private static final Map<Class<?>, Set<ProxyInjector<?>>> INJECTORS = new IdentityHashMap<>();
-	private static final Map<Class<?>, ConditionalSet<ProxyTransformer>> TRANSFORMERS = new IdentityHashMap<>();
+	private static final Map<Class<?>, IndirectlyLinkedIdentitySet<ProxyTransformer>> TRANSFORMERS = new IdentityHashMap<>();
 
 
 	/**
@@ -107,14 +108,10 @@ public final class SarcASM {
 	 */
 	public static <T> void registerTransformer(final Class<T> targetClass, final ProxyTransformer transformer) {
 		RequestedMethodsTransformer<T> rm = RequestedMethodsTransformer.of(targetClass);
+		ProxyWrapperTransformer<T> pw = ProxyWrapperTransformer.of(targetClass);
 		SuperSuperTransformer<T> ss = SuperSuperTransformer.of(targetClass);
-		ConditionalSet<ProxyTransformer> transformers = TRANSFORMERS.computeIfAbsent(Objects.requireNonNull(targetClass), value -> {
-			ConditionalSet<ProxyTransformer> set = new ConditionalSet<>();
-			set.entry(rm).before(ss).add();
-			set.entry(ss).after(rm).add();
-			return set;
-		});
-		transformers.entry(Objects.requireNonNull(transformer)).after(rm).before(ss).add();
+		IndirectlyLinkedIdentitySet<ProxyTransformer> transformers = TRANSFORMERS.computeIfAbsent(Objects.requireNonNull(targetClass), SarcASM::initDefaultTransformers);
+		transformers.entry(Objects.requireNonNull(transformer)).after(rm).before(pw, ss).add();
 		PROXY_CLASSES.remove(targetClass);
 		if (INJECTORS.containsKey(targetClass))
 			initProxyFor(targetClass);
@@ -139,19 +136,18 @@ public final class SarcASM {
 			return;
 		}
 
-		getProxyClass(targetClass).ifPresent(proxyClass -> {
-			// injecting
-			injectors.stream().filter(tProxyInjector -> tProxyInjector.getTargetInstance() != null).collect(Collectors.groupingBy(ProxyInjector::getTargetInstance, IdentityHashMap::new, Collectors.toCollection(Util::newIdentitySet))).forEach((target, targetInjectors) -> {
-				final P proxyInstance = createShallowProxy(targetClass, proxyClass, target);
-				targetInjectors.forEach(targetInjector -> targetInjector.inject(proxyInstance));
-			});
+		Class<P> proxyClass = SarcASM.<T, P>getProxyClass(targetClass).orElseThrow(() -> new IllegalStateException(String.format("Class %s isn't proxyable!", targetClass.getName())));
+		// injecting
+		injectors.stream().filter(tProxyInjector -> tProxyInjector.getTargetInstance() != null).collect(Collectors.groupingBy(ProxyInjector::getTargetInstance, IdentityHashMap::new, Collectors.toCollection(Util::newIdentitySet))).forEach((target, targetInjectors) -> {
+			final P proxyInstance = createShallowProxy(targetClass, proxyClass, target);
+			targetInjectors.forEach(targetInjector -> targetInjector.inject(proxyInstance));
 		});
 	}
 
 	/**
 	 * Creates a new target instance using the provided factory and either
 	 * wraps it with the proxy class, or returns the new target instance itself
-	 * if there are no transformers registered for this class yet.
+	 * if the target class isn't proxyable.
 	 *
 	 * <p>
 	 *     Should only be used to create short-living instances of the target class,
@@ -160,14 +156,17 @@ public final class SarcASM {
 	 *
 	 * @param factory the target factory. Must always return a new instance of the target
 	 * @return either a new instance of target wrapped with the proxy class, or the new target instance itself in the case
-	 * that there are no transformers registered for this class
+	 * that the target class isn't proxyable
 	 * @param <T> the target type
 	 */
 	public static <T> T newUntrackedProxy(final Supplier<T> factory) {
-		final T target = factory.get();
+		return tryWrapUntrackedProxy(factory.get());
+	}
+
+	public static <T> T tryWrapUntrackedProxy(final T target) {
 		//noinspection unchecked
 		final Class<T> targetClass = (Class<T>) target.getClass();
-		return getProxyClass(targetClass).map(proxyClass -> (T) createShallowProxy(targetClass, proxyClass, target)).orElse(target);
+		return getProxyClass(targetClass).map(proxyClass -> createShallowProxy(targetClass, proxyClass, target)).orElse(target);
 	}
 
 	/**
@@ -181,7 +180,18 @@ public final class SarcASM {
 		return TRANSFORMERS.containsKey(targetClass) ? Optional.of(TRANSFORMERS.get(targetClass).stream()) : Optional.empty();
 	}
 
-	private static <T, P extends T> P createShallowProxy(final Class<T> targetClass, final Class<T> proxyClass, final T target) {
+	private static <T> IndirectlyLinkedIdentitySet<ProxyTransformer> initDefaultTransformers(Class<T> targetClass) {
+		RequestedMethodsTransformer<T> rm = RequestedMethodsTransformer.of(targetClass);
+		ProxyWrapperTransformer<T> pw = ProxyWrapperTransformer.of(targetClass);
+		SuperSuperTransformer<T> ss = SuperSuperTransformer.of(targetClass);
+		IndirectlyLinkedIdentitySet<ProxyTransformer> set = new IndirectlyLinkedIdentitySet<>();
+		set.entry(rm).before(pw, ss).add();
+		set.entry(pw).after(rm).before(pw).add();
+		set.entry(ss).after(rm, pw).add();
+		return set;
+	}
+
+	private static <T, P extends T> P createShallowProxy(final Class<T> targetClass, final Class<P> proxyClass, final T target) {
 		final P proxyInstance;
 		try {
 			//noinspection unchecked
@@ -209,13 +219,10 @@ public final class SarcASM {
 
 	private static <T, P extends T> Class<P> generateProxyClass(final Class<T> targetClass) {
 		// sanity checks
-		final ConditionalSet<ProxyTransformer> transformers = TRANSFORMERS.get(targetClass);
-		if (transformers == null) {
-			LOGGER.info("\"" + targetClass.getName() + "\" has no transformers. Skipping");
-			return null;
-		}
+		if (targetClass.getClassLoader() == null) return null;
 
 		// preparations
+		final IndirectlyLinkedIdentitySet<ProxyTransformer> transformers = TRANSFORMERS.computeIfAbsent(targetClass, SarcASM::initDefaultTransformers);
 		final ClassReader targetReader = new ClassReader(ASMHelper.readClassBytes(targetClass));
 		final ClassNode targetNode = new ClassNode();
 		targetReader.accept(targetNode, ClassReader.EXPAND_FRAMES);

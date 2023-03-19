@@ -40,7 +40,8 @@ public final class RequestedMethodsTransformer<T> implements ProxyTransformer {
         targetNode.methods.stream().filter(targetMethod -> requestedMethods.remove(ASMHelper.toTarget(targetMethod))).forEach(methodNode -> {
             final MethodNode proxyMethod = new MethodNode();
             methodNode.accept(proxyMethod);
-            methodNode.localVariables.get(0).desc = Type.getObjectType(node.name).getDescriptor();
+            if (methodNode.localVariables.size() > 0)
+                methodNode.localVariables.get(0).desc = Type.getObjectType(node.name).getDescriptor();
             node.methods.add(methodNode);
         });
         if (!requestedMethods.isEmpty())

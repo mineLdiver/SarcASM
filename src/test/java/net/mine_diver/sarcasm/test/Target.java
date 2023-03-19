@@ -11,4 +11,8 @@ public class Target extends TargetSuper {
         System.out.println("Hello world!");
         super.test();
     }
+
+    public void testTwo() {
+        System.out.println(new TargetTwo().testRecursion());
+    }
 }

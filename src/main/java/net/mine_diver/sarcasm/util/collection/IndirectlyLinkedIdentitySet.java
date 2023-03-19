@@ -12,7 +12,7 @@ import java.util.stream.StreamSupport;
  *
  * @param <T> the element type
  */
-public final class ConditionalSet<T> implements Iterable<T> {
+public final class IndirectlyLinkedIdentitySet<T> implements Iterable<T> {
 
     private final Set<Entry> entries = Util.newIdentitySet();
 
@@ -93,7 +93,7 @@ public final class ConditionalSet<T> implements Iterable<T> {
                     }
                 }
             }
-            private final Set<IterableEntry> entries = ConditionalSet.this.entries.stream().map(IterableEntry::new).collect(Collectors.toCollection(Util::newIdentitySet));
+            private final Set<IterableEntry> entries = IndirectlyLinkedIdentitySet.this.entries.stream().map(IterableEntry::new).collect(Collectors.toCollection(Util::newIdentitySet));
 
             @Override
             public boolean hasNext() {
