@@ -233,7 +233,7 @@ public final class SarcASM {
 
 		// proxy class generation
 		final ClassNode proxyNode = new ClassNode();
-		proxyNode.visit(V1_8, ACC_PUBLIC, Type.getInternalName(targetClass), null, Type.getInternalName(targetClass), null);
+		proxyNode.visit(V1_8, ACC_PUBLIC, Type.getInternalName(targetClass) + "$$SarcASM$Proxy", null, Type.getInternalName(targetClass), null);
 		proxyNode.visitEnd();
 
 		// transforming
@@ -257,9 +257,22 @@ public final class SarcASM {
 		proxyNode.accept(proxyWriter);
 		final byte[] proxyBytes = proxyWriter.toByteArray();
 		debugExport(proxyNode, proxyBytes);
+
+		// a very, very bad workaround for proxies not being able to use their classes as field types, method argument types, etc., due to being defined as hidden
+		// ideally, proxies should be regular classes and hidden classes should only be used as bridges for private members, but, oh well, too much work
+		DEFINED_CLASSES.computeIfAbsent(Type.getInternalName(targetClass) + "$$SarcASM$Proxy", name -> {
+			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+			writer.visit(V1_8, ACC_PUBLIC, name, null, Type.getInternalName(targetClass), null);
+			writer.visitEnd();
+			byte[] hackBytes = writer.toByteArray();
+			return Util.UNSAFE.defineClass(name, hackBytes, 0, hackBytes.length, targetClass.getClassLoader(), targetClass.getProtectionDomain());
+		});
+
 		//noinspection unchecked
 		return (Class<P>) Util.UNSAFE.defineAnonymousClass(targetClass, proxyBytes, null).asSubclass(targetClass);
 	}
+
+	private static final Map<String, Class<?>> DEFINED_CLASSES = new HashMap<>();
 
 	private static void debugExport(final ClassNode proxyNode, final byte[] proxyBytes) {
 		if (DEBUG_EXPORT) {

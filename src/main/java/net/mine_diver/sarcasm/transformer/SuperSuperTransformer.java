@@ -53,7 +53,7 @@ public final class SuperSuperTransformer<T> implements ProxyTransformer {
                     mhInit.add(new LdcInsnNode(Type.getObjectType(targetNode.superName)));
                     mhInit.add(new LdcInsnNode(methodInsnNode.name));
                     mhInit.add(new LdcInsnNode(Type.getMethodType(methodInsnNode.desc)));
-                    mhInit.add(new LdcInsnNode(Type.getObjectType(targetNode.superName)));
+                    mhInit.add(new LdcInsnNode(Type.getObjectType(targetNode.name)));
                     mhInit.add(new MethodInsnNode(INVOKEVIRTUAL, Type.getInternalName(MethodHandles.Lookup.class), "findSpecial", Type.getMethodDescriptor(Type.getType(MethodHandle.class), Type.getType(Class.class), Type.getType(String.class), Type.getType(MethodType.class), Type.getType(Class.class))));
                     mhInit.add(new FieldInsnNode(PUTSTATIC, node.name, methodHandle.name, methodHandle.desc));
                     final InsnList clinitInsns = node.methods.stream().filter(methodNode1 -> methodNode1.name.equals("<clinit>")).findFirst().orElseGet(() -> {

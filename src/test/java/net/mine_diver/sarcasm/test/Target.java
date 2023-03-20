@@ -10,6 +10,7 @@ public class Target extends TargetSuper {
     public void test() {
         System.out.println("Hello world!");
         super.test();
+        Main.test(this);
     }
 
     public void testTwo() {

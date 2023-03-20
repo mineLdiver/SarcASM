@@ -18,4 +18,8 @@ public class Main {
         SarcASM.registerTransformer(TargetTwo.class, new TargetTwoTransformer());
         untracked.testTwo();
     }
+
+    public static void test(Target target) {
+        System.out.println(target);
+    }
 }
