@@ -157,4 +157,10 @@ public final class ASMHelper {
             method.instructions.add(end = new LabelNode());
         return end;
     }
+
+    public static MethodNode clone(MethodNode methodNode) {
+        MethodNode clonedNode = new MethodNode(methodNode.access, methodNode.name, methodNode.desc, methodNode.signature, methodNode.exceptions.toArray(new String[0]));
+        methodNode.accept(clonedNode);
+        return clonedNode;
+    }
 }
