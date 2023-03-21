@@ -2,7 +2,6 @@ package net.mine_diver.sarcasm.transformer;
 
 import net.mine_diver.sarcasm.SarcASM;
 import net.mine_diver.sarcasm.util.ASMHelper;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
@@ -36,9 +35,7 @@ public class ProxyWrapperTransformer<T> implements ProxyTransformer {
     private final String[] methods;
 
     private ProxyWrapperTransformer(Class<T> targetClass) {
-        ClassNode targetNode = new ClassNode();
-        new ClassReader(ASMHelper.readClassBytes(targetClass)).accept(targetNode, ClassReader.EXPAND_FRAMES);
-        methods = targetNode.methods.stream().filter(methodNode -> NON_STATIC_NON_FINAL_NON_CONSTRUCTOR.test(methodNode) && StreamSupport.stream(methodNode.instructions.spliterator(), false).anyMatch(CONSTRUCTOR)).map(ASMHelper::toTarget).toArray(String[]::new);
+        methods = ASMHelper.readClassNode(targetClass).methods.stream().filter(methodNode -> NON_STATIC_NON_FINAL_NON_CONSTRUCTOR.test(methodNode) && StreamSupport.stream(methodNode.instructions.spliterator(), false).anyMatch(CONSTRUCTOR)).map(ASMHelper::toTarget).toArray(String[]::new);
     }
 
     @Override

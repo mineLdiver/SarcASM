@@ -2,7 +2,6 @@ package net.mine_diver.sarcasm.transformer;
 
 import net.mine_diver.sarcasm.util.ASMHelper;
 import net.mine_diver.sarcasm.util.Util;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
@@ -26,10 +25,10 @@ public final class SuperSuperTransformer<T> implements ProxyTransformer {
         return (SuperSuperTransformer<T>) CACHE.computeIfAbsent(targetClass, SuperSuperTransformer::new);
     }
 
-    private final ClassNode targetNode = new ClassNode();
+    private final ClassNode targetNode;
 
     private SuperSuperTransformer(Class<T> targetClass) {
-        new ClassReader(ASMHelper.readClassBytes(targetClass)).accept(targetNode, ClassReader.EXPAND_FRAMES);
+        targetNode = ASMHelper.readClassNode(targetClass);
     }
 
     @Override

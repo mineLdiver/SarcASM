@@ -5,11 +5,9 @@ import net.mine_diver.sarcasm.transformer.ProxyTransformer;
 import net.mine_diver.sarcasm.transformer.ProxyWrapperTransformer;
 import net.mine_diver.sarcasm.transformer.RequestedMethodsTransformer;
 import net.mine_diver.sarcasm.transformer.SuperSuperTransformer;
-import net.mine_diver.sarcasm.util.ASMHelper;
 import net.mine_diver.sarcasm.util.Reflection;
 import net.mine_diver.sarcasm.util.Util;
 import net.mine_diver.sarcasm.util.collection.IndirectlyLinkedIdentitySet;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -227,9 +225,6 @@ public final class SarcASM {
 
 		// preparations
 		final IndirectlyLinkedIdentitySet<ProxyTransformer> transformers = TRANSFORMERS.computeIfAbsent(targetClass, SarcASM::initDefaultTransformers);
-		final ClassReader targetReader = new ClassReader(ASMHelper.readClassBytes(targetClass));
-		final ClassNode targetNode = new ClassNode();
-		targetReader.accept(targetNode, ClassReader.EXPAND_FRAMES);
 
 		// proxy class generation
 		final ClassNode proxyNode = new ClassNode();

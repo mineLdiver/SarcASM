@@ -1,5 +1,6 @@
 package net.mine_diver.sarcasm.util;
 
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
@@ -24,6 +25,12 @@ public final class ASMHelper {
         }
         return bytes;
 	}
+
+    public static ClassNode readClassNode(Class<?> classObject) {
+        ClassNode classNode = new ClassNode();
+        new ClassReader(readClassBytes(classObject)).accept(classNode, ClassReader.EXPAND_FRAMES);
+        return classNode;
+    }
 	
 	public static String toTarget(MethodNode method) {
 		return method.name + method.desc;

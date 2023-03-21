@@ -2,7 +2,6 @@ package net.mine_diver.sarcasm.transformer;
 
 import net.mine_diver.sarcasm.SarcASM;
 import net.mine_diver.sarcasm.util.ASMHelper;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -20,11 +19,11 @@ public final class RequestedMethodsTransformer<T> implements ProxyTransformer {
     }
 
     private final Class<T> targetClass;
-    private final ClassNode targetNode = new ClassNode();
+    private final ClassNode targetNode;
 
     private RequestedMethodsTransformer(Class<T> targetClass) {
         this.targetClass = targetClass;
-        new ClassReader(ASMHelper.readClassBytes(targetClass)).accept(targetNode, ClassReader.EXPAND_FRAMES);
+        targetNode = ASMHelper.readClassNode(targetClass);
     }
 
     @Override
