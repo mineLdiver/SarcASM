@@ -2,12 +2,11 @@ package net.mine_diver.sarcasm.transformer;
 
 import net.mine_diver.sarcasm.SarcASM;
 import net.mine_diver.sarcasm.util.ASMHelper;
+import net.mine_diver.sarcasm.util.collection.IdentityCache;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import java.lang.reflect.Modifier;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -17,23 +16,52 @@ import static net.mine_diver.sarcasm.util.Util.compose;
 import static net.mine_diver.sarcasm.util.Util.soften;
 import static org.objectweb.asm.Opcodes.*;
 
+/**
+ * Transformer that wraps all constructor calls with a call to {@link SarcASM#tryWrapUntrackedProxy(Object)}.
+ *
+ * <p>
+ *     This is done to expand coverage of SarcASM's transformers
+ *     by trying to proxy everything it has access to.
+ * </p>
+ *
+ * <p>
+ *     However, it can also cause issues with data structures
+ *     that are sensitive to {@link Class} objects,
+ *     so it's possible to filter out some classes from being
+ *     wrapped by this transformer using {@link #addGlobalConstructorFilter(BinaryOperator, Predicate)},
+ *     {@link #addConstructorFilter(BinaryOperator, Predicate)} and their friends.
+ * </p>
+ *
+ * @param <T> type of the class an instance of the transformer is registered for
+ */
 public class ProxyWrapperTransformer<T> implements ProxyTransformer {
-    private static final Predicate<MethodNode> NON_STATIC_NON_FINAL_NON_CONSTRUCTOR = methodNode -> !Modifier.isStatic(methodNode.access) && !Modifier.isFinal(methodNode.access) && !"<init>".equals(methodNode.name);
+    private static final Predicate<MethodNode> NON_STATIC_NON_FINAL_NON_CONSTRUCTOR = methodNode ->
+            !Modifier.isStatic(methodNode.access)
+                    && !Modifier.isFinal(methodNode.access)
+                    && !"<init>".equals(methodNode.name);
     private static final Predicate<AbstractInsnNode> CONSTRUCTOR = node -> node.getOpcode() == INVOKESPECIAL && "<init>".equals(((MethodInsnNode) node).name);
     private static final Function<MethodInsnNode, InsnList> WRAPPER_FACTORY = constructor -> {
         InsnList wrapper = new InsnList();
-        wrapper.add(new MethodInsnNode(INVOKESTATIC, Type.getInternalName(SarcASM.class), "tryWrapUntrackedProxy", Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class))));
+        wrapper.add(new MethodInsnNode(
+                INVOKESTATIC,
+                Type.getInternalName(SarcASM.class),
+                "tryWrapUntrackedProxy",
+                Type.getMethodDescriptor(
+                        Type.getType(Object.class),
+                        Type.getType(Object.class)
+                )
+        ));
         wrapper.add(new TypeInsnNode(CHECKCAST, constructor.owner));
         return wrapper;
     };
 
     private static Predicate<MethodInsnNode> globalConstructorFilter;
 
-    private static final Map<Class<?>, ProxyWrapperTransformer<?>> CACHE = new IdentityHashMap<>();
+    private static final IdentityCache<Class<?>, ProxyWrapperTransformer<?>> CACHE = new IdentityCache<>(ProxyWrapperTransformer::new);
 
     public static <T> ProxyWrapperTransformer<T> of(Class<T> targetClass) {
         //noinspection unchecked
-        return (ProxyWrapperTransformer<T>) CACHE.computeIfAbsent(targetClass, ProxyWrapperTransformer::new);
+        return (ProxyWrapperTransformer<T>) CACHE.get(targetClass);
     }
 
     public static void addGlobalConstructorFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<MethodInsnNode> filter) {
@@ -102,7 +130,8 @@ public class ProxyWrapperTransformer<T> implements ProxyTransformer {
     private ProxyWrapperTransformer(Class<T> targetClass) {
         methods = ASMHelper.readClassNode(targetClass).methods
                 .stream()
-                .filter(methodNode -> NON_STATIC_NON_FINAL_NON_CONSTRUCTOR.test(methodNode) && StreamSupport
+                .filter(methodNode -> NON_STATIC_NON_FINAL_NON_CONSTRUCTOR.test(methodNode)
+                        && StreamSupport
                         .stream(methodNode.instructions.spliterator(), false)
                         .anyMatch(CONSTRUCTOR)
                 )

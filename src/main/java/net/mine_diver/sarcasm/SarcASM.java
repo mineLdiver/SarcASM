@@ -167,14 +167,14 @@ public final class SarcASM {
 	}
 
 	/**
-	 * If available, returns a stream of all transformers for the target class in the correct order.
+	 * Returns a stream of all transformers for the target class in the correct order.
 	 *
 	 * @param targetClass the target class
-	 * @return an optional of a stream of all transformers for the target class in the correct order
+	 * @return a stream of all transformers for the target class in the correct order
 	 * @param <T> the target type
 	 */
-	public static <T> Optional<Stream<ProxyTransformer>> streamTransformers(final Class<T> targetClass) {
-		return TRANSFORMERS.containsKey(targetClass) ? Optional.of(TRANSFORMERS.get(targetClass).stream()) : Optional.empty();
+	public static <T> Stream<ProxyTransformer> streamTransformers(final Class<T> targetClass) {
+		return TRANSFORMERS.containsKey(targetClass) ? TRANSFORMERS.get(targetClass).stream() : Stream.empty();
 	}
 
 	public static <T> void invalidateProxyClass(Class<T> targetClass) {
