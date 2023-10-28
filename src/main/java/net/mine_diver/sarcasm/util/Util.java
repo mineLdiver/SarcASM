@@ -60,7 +60,8 @@ public class Util {
     }
 
     private static RuntimeException throwSoftenedException(final Throwable e) {
-        throw Util.uncheck(e);
+        //noinspection RedundantTypeArguments
+        throw Util.<RuntimeException>uncheck(e);
     }
 
     private static <T extends Throwable> T uncheck(final Throwable throwable) throws T {

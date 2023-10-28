@@ -36,27 +36,68 @@ public class ProxyWrapperTransformer<T> implements ProxyTransformer {
         return (ProxyWrapperTransformer<T>) CACHE.computeIfAbsent(targetClass, ProxyWrapperTransformer::new);
     }
 
-    public static void addConstructorFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<MethodInsnNode> filter) {
-        globalConstructorFilter = globalConstructorFilter == null ? filter : combiner.apply(globalConstructorFilter, filter);
+    public static void addGlobalConstructorFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<MethodInsnNode> filter) {
+        globalConstructorFilter = addConstructorFilter(globalConstructorFilter, combiner, filter);
     }
 
-    public static void addOwnerFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<String> filter) {
-        addConstructorFilter(combiner, compose(filter, methodInsnNode -> methodInsnNode.owner));
+    public static void addGlobalOwnerFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<String> filter) {
+        globalConstructorFilter = addOwnerFilter(globalConstructorFilter, combiner, filter);
     }
 
-    public static void addTypeFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<Type> filter) {
-        addOwnerFilter(combiner, compose(filter, Type::getObjectType));
+    public static void addGlobalTypeFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<Type> filter) {
+        globalConstructorFilter = addTypeFilter(globalConstructorFilter, combiner, filter);
     }
 
-    public static void addClassNameFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<String> filter) {
-        addTypeFilter(combiner, compose(filter, Type::getClassName));
+    public static void addGlobalClassNameFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<String> filter) {
+        globalConstructorFilter = addClassNameFilter(globalConstructorFilter, combiner, filter);
     }
 
-    public static void addClassFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<Class<?>> filter) {
-        addClassNameFilter(combiner, compose(filter, soften(Class::forName)));
+    public static void addGlobalClassFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<Class<?>> filter) {
+        globalConstructorFilter = addClassFilter(globalConstructorFilter, combiner, filter);
+    }
+
+    private static Predicate<MethodInsnNode> addConstructorFilter(
+            Predicate<MethodInsnNode> instance,
+            BinaryOperator<Predicate<MethodInsnNode>> combiner,
+            Predicate<MethodInsnNode> filter
+    ) {
+        return instance == null ? filter : combiner.apply(instance, filter);
+    }
+
+    private static Predicate<MethodInsnNode> addOwnerFilter(
+            Predicate<MethodInsnNode> instance,
+            BinaryOperator<Predicate<MethodInsnNode>> combiner,
+            Predicate<String> filter
+    ) {
+        return addConstructorFilter(instance, combiner, compose(filter, methodInsnNode -> methodInsnNode.owner));
+    }
+
+    private static Predicate<MethodInsnNode> addTypeFilter(
+            Predicate<MethodInsnNode> instance,
+            BinaryOperator<Predicate<MethodInsnNode>> combiner,
+            Predicate<Type> filter
+    ) {
+        return addOwnerFilter(instance, combiner, compose(filter, Type::getObjectType));
+    }
+
+    private static Predicate<MethodInsnNode> addClassNameFilter(
+            Predicate<MethodInsnNode> instance,
+            BinaryOperator<Predicate<MethodInsnNode>> combiner,
+            Predicate<String> filter
+    ) {
+        return addTypeFilter(instance, combiner, compose(filter, Type::getClassName));
+    }
+
+    private static Predicate<MethodInsnNode> addClassFilter(
+            Predicate<MethodInsnNode> instance,
+            BinaryOperator<Predicate<MethodInsnNode>> combiner,
+            Predicate<Class<?>> filter
+    ) {
+        return addClassNameFilter(instance, combiner, compose(filter, soften(Class::forName)));
     }
 
     private final String[] methods;
+    private Predicate<MethodInsnNode> constructorFilter;
 
     private ProxyWrapperTransformer(Class<T> targetClass) {
         methods = ASMHelper.readClassNode(targetClass).methods
@@ -84,7 +125,28 @@ public class ProxyWrapperTransformer<T> implements ProxyTransformer {
                         .filter(CONSTRUCTOR)
                         .map(insn -> (MethodInsnNode) insn)
                         .filter(globalConstructorFilter == null ? methodInsnNode -> true : globalConstructorFilter)
+                        .filter(constructorFilter == null ? methodInsnNode -> true : constructorFilter)
                         .forEach(methodInsnNode -> methodNode.instructions.insert(methodInsnNode, WRAPPER_FACTORY.apply(methodInsnNode)))
                 );
+    }
+
+    public void addConstructorFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<MethodInsnNode> filter) {
+        constructorFilter = addConstructorFilter(constructorFilter, combiner, filter);
+    }
+
+    public void addOwnerFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<String> filter) {
+        constructorFilter = addOwnerFilter(constructorFilter, combiner, filter);
+    }
+
+    public void addTypeFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<Type> filter) {
+        constructorFilter = addTypeFilter(constructorFilter, combiner, filter);
+    }
+
+    public void addClassNameFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<String> filter) {
+        constructorFilter = addClassNameFilter(constructorFilter, combiner, filter);
+    }
+
+    public void addClassFilter(BinaryOperator<Predicate<MethodInsnNode>> combiner, Predicate<Class<?>> filter) {
+        constructorFilter = addClassFilter(constructorFilter, combiner, filter);
     }
 }
