@@ -24,12 +24,14 @@ public final class SoftReferenceCache<K, V> {
         }
         Function<K, Reference<V>> referenceFactory = k -> new CacheReference(factory.apply(k), k);
         referenceValidator = (k, reference) -> reference == null || reference.get() == null ? referenceFactory.apply(k) : reference;
-        new Thread(() -> {
+        Thread cleanupThread = new Thread(() -> {
             while (true) try {
                 //noinspection unchecked
                 cache.remove(((CacheReference) queue.remove()).key);
             } catch (InterruptedException ignored) {}
-        }).start();
+        });
+        cleanupThread.setDaemon(true);
+        cleanupThread.start();
     }
 
     public V get(K key) {
