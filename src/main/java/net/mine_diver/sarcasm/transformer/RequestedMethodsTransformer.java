@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  */
 public final class RequestedMethodsTransformer<T> implements ProxyTransformer {
     private static final IdentityCache<Class<?>, RequestedMethodsTransformer<?>> CACHE = new IdentityCache<>(RequestedMethodsTransformer::new);
-    public static final Identifier PHASE = SarcASM.NAMESPACE.id("requested_methods_phase");
+    public static final Identifier PHASE = SarcASM.NAMESPACE.id("requested_methods");
 
     public static <T> RequestedMethodsTransformer<T> of(Class<T> targetClass) {
         //noinspection unchecked

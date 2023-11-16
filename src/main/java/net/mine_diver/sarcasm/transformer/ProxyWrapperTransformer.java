@@ -59,7 +59,7 @@ public class ProxyWrapperTransformer<T> implements ProxyTransformer {
     private static Predicate<MethodInsnNode> globalConstructorFilter;
 
     private static final IdentityCache<Class<?>, ProxyWrapperTransformer<?>> CACHE = new IdentityCache<>(ProxyWrapperTransformer::new);
-    public static final Identifier PHASE = SarcASM.NAMESPACE.id("proxy_wrapper_phase");
+    public static final Identifier PHASE = SarcASM.NAMESPACE.id("proxy_wrapper");
 
     public static <T> ProxyWrapperTransformer<T> of(Class<T> targetClass) {
         //noinspection unchecked

@@ -27,7 +27,7 @@ import static org.objectweb.asm.Opcodes.*;
  */
 public final class SuperSuperTransformer<T> implements ProxyTransformer {
     private static final IdentityCache<Class<?>, SuperSuperTransformer<?>> CACHE = new IdentityCache<>(SuperSuperTransformer::new);
-    public static final Identifier PHASE = SarcASM.NAMESPACE.id("super_super_phase");
+    public static final Identifier PHASE = SarcASM.NAMESPACE.id("super_super");
 
     public static <T> SuperSuperTransformer<T> of(Class<T> targetClass) {
         //noinspection unchecked
