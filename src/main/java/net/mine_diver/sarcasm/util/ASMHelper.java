@@ -12,9 +12,9 @@ import java.util.Objects;
 import java.util.function.IntFunction;
 
 public final class ASMHelper {
-	private ASMHelper() {}
-	
-	public static byte[] readClassBytes(Class<?> classObject) {
+    private ASMHelper() {}
+
+    public static byte[] readClassBytes(Class<?> classObject) {
         byte[] bytes;
         try (InputStream classStream = Objects.requireNonNull(classObject.getClassLoader().getResourceAsStream(classObject.getName().replace('.', '/').concat(".class")))) {
             bytes = new byte[classStream.available()];
@@ -24,17 +24,17 @@ public final class ASMHelper {
             throw new RuntimeException(e);
         }
         return bytes;
-	}
+    }
 
     public static ClassNode readClassNode(Class<?> classObject) {
         ClassNode classNode = new ClassNode();
         new ClassReader(readClassBytes(classObject)).accept(classNode, ClassReader.EXPAND_FRAMES);
         return classNode;
     }
-	
-	public static String toTarget(MethodNode method) {
-		return method.name + method.desc;
-	}
+
+    public static String toTarget(MethodNode method) {
+        return method.name + method.desc;
+    }
 
     public static String toTarget(Class<?> owner, MethodNode methodNode) {
         return Type.getDescriptor(owner) + methodNode.name + methodNode.desc;

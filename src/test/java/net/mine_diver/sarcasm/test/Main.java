@@ -8,14 +8,14 @@ public class Main {
         System.out.println(Target.INSTANCE.getClass().getName());
         Target.INSTANCE.test();
         SarcASM.registerInjector(Target.class, new TargetInjector());
-        SarcASM.registerTransformer(Target.class, new TargetTransformer());
+        SarcASM.getManager(Target.class).register(new TargetTransformer());
         System.out.println(Target.INSTANCE.getClass().getName());
         Target.INSTANCE.test();
         Target untracked = SarcASM.newUntrackedProxy(Target::new);
         System.out.println(untracked.getClass().getName());
         System.out.println(untracked == Target.INSTANCE);
         untracked.test();
-        SarcASM.registerTransformer(TargetTwo.class, new TargetTwoTransformer());
+        SarcASM.getManager(TargetTwo.class).register(new TargetTwoTransformer());
         untracked.testTwo();
     }
 

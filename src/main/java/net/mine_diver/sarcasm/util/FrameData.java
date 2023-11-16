@@ -30,7 +30,6 @@ import org.objectweb.asm.tree.FrameNode;
  * Information about frames in a method
  */
 public class FrameData {
-
     private static final String[] FRAMETYPES = { "NEW", "FULL", "APPEND", "CHOP", "SAME", "SAME1" };
 
     /**

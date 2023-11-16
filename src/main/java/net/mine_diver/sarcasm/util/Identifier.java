@@ -2,7 +2,7 @@ package net.mine_diver.sarcasm.util;
 
 import net.mine_diver.sarcasm.util.collection.SoftReferenceCache;
 
-public final class Identifier {
+public final class Identifier implements Comparable<Identifier> {
     private static final SoftReferenceCache<IdentifierCacheKey, Identifier> CACHE = new SoftReferenceCache<>(Identifier::new);
 
     public static final char NAMESPACE_SEPARATOR = ':';
@@ -60,6 +60,11 @@ public final class Identifier {
     @Override
     public String toString() {
         return toString;
+    }
+
+    @Override
+    public int compareTo(Identifier o) {
+        return toString.compareTo(o.toString);
     }
 
     private static final class IdentifierCacheKey {

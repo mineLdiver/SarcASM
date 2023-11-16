@@ -2,6 +2,7 @@ package net.mine_diver.sarcasm.transformer;
 
 import net.mine_diver.sarcasm.SarcASM;
 import net.mine_diver.sarcasm.util.ASMHelper;
+import net.mine_diver.sarcasm.util.Identifier;
 import net.mine_diver.sarcasm.util.collection.IdentityCache;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -58,6 +59,7 @@ public class ProxyWrapperTransformer<T> implements ProxyTransformer {
     private static Predicate<MethodInsnNode> globalConstructorFilter;
 
     private static final IdentityCache<Class<?>, ProxyWrapperTransformer<?>> CACHE = new IdentityCache<>(ProxyWrapperTransformer::new);
+    public static final Identifier PHASE = SarcASM.NAMESPACE.id("proxy_wrapper_phase");
 
     public static <T> ProxyWrapperTransformer<T> of(Class<T> targetClass) {
         //noinspection unchecked

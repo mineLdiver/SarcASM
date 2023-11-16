@@ -2,6 +2,7 @@ package net.mine_diver.sarcasm.transformer;
 
 import net.mine_diver.sarcasm.SarcASM;
 import net.mine_diver.sarcasm.util.ASMHelper;
+import net.mine_diver.sarcasm.util.Identifier;
 import net.mine_diver.sarcasm.util.collection.IdentityCache;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
  */
 public final class RequestedMethodsTransformer<T> implements ProxyTransformer {
     private static final IdentityCache<Class<?>, RequestedMethodsTransformer<?>> CACHE = new IdentityCache<>(RequestedMethodsTransformer::new);
+    public static final Identifier PHASE = SarcASM.NAMESPACE.id("requested_methods_phase");
 
     public static <T> RequestedMethodsTransformer<T> of(Class<T> targetClass) {
         //noinspection unchecked

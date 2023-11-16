@@ -13,7 +13,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class Util {
-
     public static final Unsafe UNSAFE;
     public static final MethodHandles.Lookup IMPL_LOOKUP;
     static {

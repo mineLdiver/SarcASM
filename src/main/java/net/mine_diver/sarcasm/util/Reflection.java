@@ -4,7 +4,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 public class Reflection {
-
     public static Field publicField(Field field) {
         try {
             field.setAccessible(true);

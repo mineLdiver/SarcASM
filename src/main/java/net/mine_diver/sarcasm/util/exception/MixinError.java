@@ -29,7 +29,6 @@ package net.mine_diver.sarcasm.util.exception;
  * something wrong in Mixin's state which isn't the user's fault
  */
 public class MixinError extends Error {
-
     private static final long serialVersionUID = 1L;
 
     public MixinError() {

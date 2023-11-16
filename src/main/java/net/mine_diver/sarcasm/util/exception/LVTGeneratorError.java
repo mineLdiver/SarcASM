@@ -29,7 +29,6 @@ package net.mine_diver.sarcasm.util.exception;
  * antichrist~~ generating the LVT for a target method.
  */
 public class LVTGeneratorError extends MixinError {
-
     private static final long serialVersionUID = 1L;
 
     public LVTGeneratorError(String message) {
