@@ -4,6 +4,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -16,15 +17,22 @@ public final class ASMHelper {
 
     public static byte[] readClassBytes(Class<?> classObject) {
         byte[] bytes;
-        try (InputStream classStream = Objects.requireNonNull(classObject.getClassLoader().getResourceAsStream(classObject.getName().replace('.', '/').concat(".class")))) {
-            bytes = new byte[classStream.available()];
-            if (classStream.read(bytes) == -1)
-                throw new RuntimeException("Couldn't read class \"" + classObject.getName() + "\"!");
+        int totalRead;
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try (InputStream classStream = Objects.requireNonNull(ASMHelper.class.getClassLoader().getResourceAsStream(classObject.getName().replace('.', '/').concat(".class")))) {
+            while(classStream.available() > 0) {
+            	bytes = new byte[classStream.available()];
+            	totalRead = classStream.read(bytes);
+                if (totalRead == -1)
+                    throw new RuntimeException("Couldn't read class \"" + classObject.getName() + "\"!");
+                buffer.write(bytes, 0, totalRead);
+            }
+        	
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return bytes;
-    }
+        return buffer.toByteArray();
+	}
 
     public static ClassNode readClassNode(Class<?> classObject) {
         ClassNode classNode = new ClassNode();
