@@ -66,7 +66,9 @@ public final class SuperSuperTransformer<T> implements ProxyTransformer {
                                 if (!methodHandles.containsKey(target)) {
                                     final FieldNode methodHandle = new FieldNode(
                                             ACC_PRIVATE | ACC_STATIC | ACC_FINAL,
-                                            "SARCASM$super_" + methodInsnNode.name + methodInsnNode.desc,
+                                            "SARCASM$super_" + methodInsnNode.name + methodInsnNode.desc
+                                                    .replaceAll("/", "|")
+                                                    .replaceAll(";", ":"),
                                             Type.getDescriptor(MethodHandle.class),
                                             null, null
                                     );

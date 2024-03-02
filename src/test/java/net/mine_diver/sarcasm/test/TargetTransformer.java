@@ -12,7 +12,7 @@ public class TargetTransformer implements ProxyTransformer {
     @Override
     public String[] getRequestedMethods() {
         return new String[] {
-                "test()V"
+                "test(Ljava/lang/String;)V"
         };
     }
 

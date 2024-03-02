@@ -7,9 +7,9 @@ public class Target extends TargetSuper {
     public Target() {}
 
     @Override
-    public void test() {
+    public void test(String testString) {
         System.out.println("Hello world!");
-        super.test();
+        super.test(testString);
         Main.test(this);
     }
 
